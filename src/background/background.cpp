@@ -157,6 +157,7 @@ bool WayfireBackground::change_background()
 
     if (!load_next_background(pbuf, path))
     {
+        set_background();
         return false;
     }
 
@@ -261,6 +262,78 @@ void WayfireBackground::reset_background()
     scale = window.get_scale_factor();
 }
 
+#define GIOMM_24
+static Glib::RefPtr<Gio::Cancellable> cancellable;
+
+void WayfireBackground::file_monitor(std::string& path)
+{
+    if (tag)
+    {
+        tag.disconnect();
+    }
+
+    Glib::RefPtr<Gio::File> gf = Gio::File::create_for_path(path.c_str());
+    Gio::FileType ft = gf->query_file_type();
+    try {
+        if (ft ==
+#ifdef GIOMM_24
+            Gio::FILE_TYPE_DIRECTORY
+#else
+            Gio::FileType::DIRECTORY
+#endif
+        )
+        {
+            fm = gf->monitor_directory(cancellable,
+#ifdef GIOMM_24
+                Gio::FILE_MONITOR_NONE
+#else
+                Gio::FileMonitorFlags::NONE
+#endif
+            );
+        } else
+        {
+            fm = gf->monitor_file(cancellable,
+#ifdef GIOMM_24
+                Gio::FILE_MONITOR_NONE
+#else
+                Gio::FileMonitorFlags::NONE
+#endif
+            );
+        }
+    } catch (const Gio::Error& error)
+    {
+        std::cerr << "g_file_monitor_file(" << path <<
+            ": failed: " << error.what() << std::endl;
+        return;
+    }
+
+    tag = fm->signal_changed().connect([this] (const Glib::RefPtr<Gio::File>& file,
+                                               const Glib::RefPtr<Gio::File>& other_file,
+#ifdef GIOMM_24
+                                               Gio::FileMonitorEvent
+#else
+                                               Gio::FileMonitor::Event
+#endif
+                                               event)
+    {
+        if (
+#ifdef GIOMM_24
+            event != Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT &&
+            event != Gio::FILE_MONITOR_EVENT_DELETED
+
+#else
+            event != Gio::FileMonitorEvent::CHANGES_DONE_HINT &&
+            event != Gio::FileMonitorEvent::DELETED
+#endif
+        )
+        {
+            return;
+        }
+
+        set_background();
+    });
+}
+
 void WayfireBackground::set_background()
 {
     Glib::RefPtr<Gdk::Pixbuf> pbuf;
@@ -268,6 +341,7 @@ void WayfireBackground::set_background()
     reset_background();
 
     std::string path = background_image;
+    file_monitor(path);
     try {
         if (load_images_from_dir(path) && images.size())
         {
