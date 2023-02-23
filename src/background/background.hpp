@@ -96,6 +96,10 @@ class WayfireBackground
 
     void setup_window();
 
+    Glib::RefPtr<Gio::FileMonitor> fm;
+    sigc::connection tag;
+    void file_monitor(std::string& path);
+
   public:
     guint window_width  = 0;
     guint window_height = 0;
