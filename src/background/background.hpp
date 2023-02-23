@@ -70,6 +70,10 @@ class WayfireBackground
 
     void setup_window();
 
+    Glib::RefPtr<Gio::FileMonitor> fm;
+    sigc::connection tag;
+    void file_monitor(std::string& path);
+
   public:
     WayfireBackground(WayfireShellApp *app, WayfireOutput *output);
     bool change_background();
