@@ -47,6 +47,8 @@ add_project_arguments('-DRESOURCEDIR="' + resource_dir + '"', language : 'cpp')
 add_project_arguments('-DMETADATA_DIR="' + metadata_dir + '"', language : 'cpp')
 add_project_arguments('-DSYSCONF_DIR="' + sysconf_dir + '"', language : 'cpp')
 
+add_project_arguments('-Wno-deprecated-declarations', language : 'cpp')
+
 subdir('metadata')
 subdir('proto')
 subdir('data')
