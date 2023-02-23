@@ -30,6 +30,10 @@ class WayfireBackgroundApp : public WayfireShellApp
     std::string cache_file = "", current_background;
     sigc::connection change_bg_conn;
 
+    Glib::RefPtr<Gio::FileMonitor> fm;
+    sigc::connection tag;
+    void file_monitor(std::string& path);
+
   public:
     using WayfireShellApp::WayfireShellApp;
     void on_activate() override;

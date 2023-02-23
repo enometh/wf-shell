@@ -202,6 +202,7 @@ void WayfireBackgroundApp::change_background()
         }
 
         current_background = list[idx];
+        file_monitor(current_background);
         write_cache(list[idx]);
     }
 
@@ -235,4 +236,80 @@ void WayfireBackgroundApp::reset_cycle_timeout()
         change_background();
         return G_SOURCE_REMOVE;
     }, background_cycle);
+}
+
+#define GIOMM_24
+#undef GIOMM_24
+static Glib::RefPtr<Gio::Cancellable> cancellable;
+
+void WayfireBackgroundApp::file_monitor(std::string& path)
+{
+    if (tag)
+    {
+        tag.disconnect();
+    }
+
+    Glib::RefPtr<Gio::File> gf = Gio::File::create_for_path(path.c_str());
+    Gio::FileType ft = gf->query_file_type();
+    try {
+        if (ft ==
+#ifdef GIOMM_24
+            Gio::FILE_TYPE_DIRECTORY
+#else
+            Gio::FileType::DIRECTORY
+#endif
+        )
+        {
+            fm = gf->monitor_directory(cancellable,
+#ifdef GIOMM_24
+                Gio::FILE_MONITOR_NONE
+#else
+                Gio::FileMonitorFlags::NONE
+#endif
+            );
+        } else
+        {
+            fm = gf->monitor_file(cancellable,
+#ifdef GIOMM_24
+                Gio::FILE_MONITOR_NONE
+#else
+                Gio::FileMonitorFlags::NONE
+#endif
+            );
+        }
+    } catch (const Gio::Error& error)
+    {
+        std::cerr << "g_file_monitor_file(" << path <<
+            ": failed: " << error.what() << std::endl;
+        return;
+    }
+
+    tag = fm->signal_changed().connect([this] (const Glib::RefPtr<Gio::File>& file,
+                                               const Glib::RefPtr<Gio::File>& other_file,
+#ifdef GIOMM_24
+                                               Gio::FileMonitorEvent
+#else
+                                               Gio::FileMonitor::Event
+#endif
+                                               event)
+    {
+        if (
+#ifdef GIOMM_24
+            event != Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT &&
+            event != Gio::FILE_MONITOR_EVENT_DELETED
+
+#else
+            event != Gio::FileMonitor::Event::CHANGES_DONE_HINT &&
+            event != Gio::FileMonitor::Event::DELETED
+#endif
+        )
+        {
+            return;
+        }
+
+        for (auto & it : backgrounds)
+        {
+            it.second->gl_area->show_image(current_background);
+        }
+    });
 }
