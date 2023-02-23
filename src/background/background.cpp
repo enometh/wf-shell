@@ -294,6 +294,64 @@ void WayfireBackground::reset_background()
 #define GIOMM_24
 static Glib::RefPtr<Gio::Cancellable> cancellable;
 
+static void print_file_monitor_event(const Glib::RefPtr<Gio::File>& file, const Glib::RefPtr<Gio::File>& other_file,
+#ifdef GIOMM_24
+              Gio::FileMonitorEvent
+#else
+              Gio::FileMonitor::Event
+#endif
+              event)
+{
+        const char *s;
+	switch(event) {
+	case G_FILE_MONITOR_EVENT_CHANGED:
+		s = "G_FILE_MONITOR_EVENT_CHANGED:	a file changed.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:
+		s = "G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT:	a hint that this was probably the last change in a set of changes.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_DELETED:
+		s = "G_FILE_MONITOR_EVENT_DELETED:	a file was deleted.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_CREATED:
+		s = "G_FILE_MONITOR_EVENT_CREATED:	a file was created.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:
+		s = "G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED:	a file attribute was changed.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_PRE_UNMOUNT:
+		s = "G_FILE_MONITOR_EVENT_PRE_UNMOUNT:	the file location will soon be unmounted.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_UNMOUNTED:
+		s = "G_FILE_MONITOR_EVENT_UNMOUNTED:	the file location was unmounted.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_MOVED:
+		s = "G_FILE_MONITOR_EVENT_MOVED:	the file was moved -- only sent if the (deprecated) G_FILE_MONITOR_SEND_MOVED flag is set";
+		break;
+
+	case G_FILE_MONITOR_EVENT_RENAMED:
+		s = "G_FILE_MONITOR_EVENT_RENAMED:	the file was renamed within the current directory -- only sent if the G_FILE_MONITOR_WATCH_MOVES flag is set. Since: 2.46.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_MOVED_IN:
+		s = "G_FILE_MONITOR_EVENT_MOVED_IN:	the file was moved into the monitored directory from another location -- only sent if the G_FILE_MONITOR_WATCH_MOVES flag is set. Since: 2.46.";
+		break;
+
+	case G_FILE_MONITOR_EVENT_MOVED_OUT:
+		s = "G_FILE_MONITOR_EVENT_MOVED_OUT:	the file was moved out of the monitored directory to another location -- only sent if the G_FILE_MONITOR_WATCH_MOVES flag is set. Since: 2.46.";
+		break;
+	}
+	fprintf(stderr, "%s: file: %s: other_file:%s\n", s, file->get_path().c_str() ?:"" , other_file ? other_file->get_path().c_str() ?:"" : "");
+}
+
+
 void
 WayfireBackground::file_monitor(std::string& path)
 {
@@ -336,7 +394,7 @@ WayfireBackground::file_monitor(std::string& path)
 					      Gio::FileMonitor::Event
 #endif
 					      event) {
-
+	print_file_monitor_event(file, other_file, event);
         if (
 #ifdef GIOMM_24
 	    event != Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT &&
