@@ -15,7 +15,86 @@
 #include <gtk4-layer-shell.h>
 #include <glib-unix.h>
 
+#define GNOME_BG
 #include "background.hpp"
+
+#ifdef GNOME_BG
+// ;madhu 230223 pixbuf_blend and pixbuf_tile from
+// gnome-desktop/libgnome-desktop/gnome-bg.c (C) Redhat LGPLv2
+
+static void pixbuf_blend(GdkPixbuf *src,
+    GdkPixbuf *dest,
+    int src_x,
+    int src_y,
+    int src_width,
+    int src_height,
+    int dest_x,
+    int dest_y,
+    double alpha)
+{
+    int dest_width  = gdk_pixbuf_get_width(dest);
+    int dest_height = gdk_pixbuf_get_height(dest);
+    int offset_x    = dest_x - src_x;
+    int offset_y    = dest_y - src_y;
+
+    if (src_width < 0)
+    {
+        src_width = gdk_pixbuf_get_width(src);
+    }
+
+    if (src_height < 0)
+    {
+        src_height = gdk_pixbuf_get_height(src);
+    }
+
+    if (dest_x < 0)
+    {
+        dest_x = 0;
+    }
+
+    if (dest_y < 0)
+    {
+        dest_y = 0;
+    }
+
+    if (dest_x + src_width > dest_width)
+    {
+        src_width = dest_width - dest_x;
+    }
+
+    if (dest_y + src_height > dest_height)
+    {
+        src_height = dest_height - dest_y;
+    }
+
+    gdk_pixbuf_composite(src, dest,
+        dest_x, dest_y,
+        src_width, src_height,
+        offset_x, offset_y,
+        1, 1, GDK_INTERP_NEAREST,
+        alpha * 0xFF + 0.5);
+}
+
+static void pixbuf_tile(Glib::RefPtr<Gdk::Pixbuf> src, Glib::RefPtr<Gdk::Pixbuf> dest)
+{
+    int x, y;
+    int tile_width, tile_height;
+    int dest_width  = gdk_pixbuf_get_width(dest->gobj());
+    int dest_height = gdk_pixbuf_get_height(dest->gobj());
+    tile_width  = gdk_pixbuf_get_width(src->gobj());
+    tile_height = gdk_pixbuf_get_height(src->gobj());
+
+    for (y = 0; y < dest_height; y += tile_height)
+    {
+        for (x = 0; x < dest_width; x += tile_width)
+        {
+            pixbuf_blend(src->gobj(), dest->gobj(), 0, 0,
+                tile_width, tile_height, x, y, 1.0);
+        }
+    }
+}
+
+#endif
 
 
 
@@ -231,6 +310,7 @@ void BackgroundGLArea::show_image(Glib::RefPtr<BackgroundImage> next_image)
     int width, height;
 
     to_image->generate_adjustments(background->window_width, background->window_height);
+
     width  = to_image->source->get_width();
     height = to_image->source->get_height();
     glBindTexture(GL_TEXTURE_2D, to_image->tex_id);
@@ -279,7 +359,50 @@ Glib::RefPtr<BackgroundImage> WayfireBackground::create_from_file_safe(std::stri
     image->fill_type = (std::string)background_fill_mode;
 
     try {
+#ifndef GNOME_BG
         image->source = Gdk::Pixbuf::create_from_file(path);
+#else
+        std::string preserve_aspect_string = "preserve_aspect";
+        if (preserve_aspect_string.compare(background_fill_mode))
+        {
+            image->source = Gdk::Pixbuf::create_from_file(path);
+        } else
+        {
+            Glib::RefPtr<Gdk::Pixbuf> pbuf;
+            int height = window_height;
+            int width  = window_width;
+            if (!background_span)
+            {
+                pbuf = Gdk::Pixbuf::create_from_file(path);
+                if (pbuf && background_always_fit &&
+                    ((pbuf->get_width() > width) || (pbuf->get_height() > height)))
+                {
+                    fprintf(stderr, "ignoring background span for image dim (%d, %d) > (%d, %d) \n",
+                        pbuf->get_width(), pbuf->get_height(), width, height);
+                    goto always_fit;
+                }
+            } else
+            {
+always_fit:
+                bool background_preserve_aspect = true;
+                pbuf = Gdk::Pixbuf::create_from_file(path, width, height,
+                    background_preserve_aspect);
+            }
+
+            image->source = pbuf;
+            if (background_tile)
+            {
+                Glib::RefPtr<Gdk::Pixbuf> pbuf2 = Gdk::Pixbuf::create(pbuf->get_colorspace(),
+                    pbuf->get_has_alpha(),
+                    pbuf->get_bits_per_sample(),
+                    window_width,
+                    window_height);
+                pixbuf_tile(image->source, pbuf2);
+                image->source = pbuf2;
+            }
+        }
+
+#endif
     } catch (...)
     {
         return nullptr;
@@ -671,7 +794,14 @@ void WayfireBackground::setup_window()
     auto set_background    = [=] () { this->set_background(); };
     auto reset_cycle = [=] () { reset_cycle_timeout(); };
     background_image.set_callback(set_background);
+#ifndef GNOME_BG
     background_fill_mode.set_callback(update_background);
+#else
+    background_fill_mode.set_callback(set_background);
+    background_tile.set_callback(set_background);
+    background_span.set_callback(set_background);
+    background_always_fit.set_callback(set_background);
+#endif
     background_cycle_timeout.set_callback(reset_cycle);
 
     window->present();

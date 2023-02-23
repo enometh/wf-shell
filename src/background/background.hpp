@@ -107,4 +107,10 @@ class WayfireBackground
     void set_background();
     bool change_background();
     ~WayfireBackground();
+
+#ifdef GNOME_BG
+    WfOption<bool> background_tile{"background/tile"};
+    WfOption<bool> background_span{"background/span"};
+    WfOption<bool> background_always_fit{"background/always_fit"};
+#endif
 };
