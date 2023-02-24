@@ -265,7 +265,8 @@ bool WayfireBackground::load_next_background(Glib::RefPtr<Gdk::Pixbuf> & pbuf,
         {
             std::cerr << "Failed to load background images from " <<
                     (std::string)background_image << std::endl;
-            window.remove();
+//
+//            window.remove();
             return false;
         }
 
@@ -438,6 +439,15 @@ void WayfireBackground::set_background()
     } catch (...)
     {
         std::cerr << "Failed to load background image(s) " << path << std::endl;
+    }
+
+    if (!pbuf) {
+	pbuf = Gdk::Pixbuf::create(Gdk::Colorspace::COLORSPACE_RGB,
+				   true,
+				   8,
+				   window.get_allocated_width() * scale,
+				   window.get_allocated_height() * scale);
+	pbuf->fill(0x00000000);
     }
 
     reset_cycle_timeout();
