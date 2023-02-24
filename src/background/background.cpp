@@ -500,7 +500,7 @@ Glib::RefPtr<BackgroundImage> WayfireBackground::load_next_background()
         {
             std::cerr << "Failed to load background images from " <<
                     (std::string)background_image << std::endl;
-            // window.remove();
+            // window.remove();  //;madhu 220234
             return nullptr;
         }
 
