@@ -149,6 +149,7 @@ static void pixbuf_tile(Glib::RefPtr<Gdk::Pixbuf> src, Glib::RefPtr<Gdk::Pixbuf>
 
     if (notiled)
     {
+        dest->fill(0x00000000);
         pixbuf_blend(src->gobj(), dest->gobj(), src_x, src_y,
             src_width, src_height, dst_x, dst_y, 1.0);
         return;
