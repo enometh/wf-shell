@@ -75,7 +75,8 @@ static void pixbuf_blend(GdkPixbuf *src,
         alpha * 0xFF + 0.5);
 }
 
-static void pixbuf_tile(Glib::RefPtr<Gdk::Pixbuf> src, Glib::RefPtr<Gdk::Pixbuf> dest)
+static void pixbuf_tile(Glib::RefPtr<Gdk::Pixbuf> src, Glib::RefPtr<Gdk::Pixbuf> dest, bool centered = false,
+    bool notiled = false)
 {
     int x, y;
     int tile_width, tile_height;
@@ -84,12 +85,105 @@ static void pixbuf_tile(Glib::RefPtr<Gdk::Pixbuf> src, Glib::RefPtr<Gdk::Pixbuf>
     tile_width  = gdk_pixbuf_get_width(src->gobj());
     tile_height = gdk_pixbuf_get_height(src->gobj());
 
-    for (y = 0; y < dest_height; y += tile_height)
+// fprintf(stderr, "pixbuf_tiled: centered: %d notiled=%d, dest_width=%d tile_width=%d\ndest_height=%d
+// tile_height=%d\n", centered, notiled, dest_width, tile_width, dest_height, tile_height);
+
+    int src_x = 0, src_y = 0, src_width = tile_width, src_height = tile_height, dst_x = 0, dst_y = 0;
+    int nx = 0, ny = 0;
+
+    // dst_x, dst_y if non-zero are top left corner of the first
+    // centrally tiled image. nx, ny if non-zero are spillover
+    // pixels before the first integral tile.
+
+    if (src_width < dest_width)
     {
-        for (x = 0; x < dest_width; x += tile_width)
+        if (src_height < dest_height)
         {
-            pixbuf_blend(src->gobj(), dest->gobj(), 0, 0,
-                tile_width, tile_height, x, y, 1.0);
+            if (centered)
+            {
+                dst_x = (dest_width - src_width) * 0.5;
+                dst_y = (dest_height - src_height) * 0.5;
+                nx    = dst_x % src_width;
+                ny    = dst_y % src_height;
+            }
+        } else
+        {
+            if (centered)
+            {
+                dst_x = (dest_width - src_width) * 0.5;
+                src_y = (src_height - dest_height) * 0.5;
+                nx    = dst_x % src_width;
+            }
+
+            src_height = dest_height;
+        }
+    } else // image width > screen width
+    {
+        if (src_height < dest_height)
+        {
+            if (centered)
+            {
+                dst_y = (dest_height - src_height) * 0.5;
+                src_x = (src_width - dest_width) * 0.5;
+                ny    = dst_y % src_height;
+            }
+
+            src_width = dest_width;
+        } else
+        {
+            if (centered)
+            {
+                src_y = (src_height - dest_height) * 0.5;
+                src_x = (src_width - dest_width) * 0.5;
+            }
+
+            src_width  = dest_width;
+            src_height = dest_height;
+        }
+    }
+
+// fprintf(stderr, ":src_x=%d src_y=%d src_width=%d src_height=%d dst_X=%d dst_Y=%d, nx=%d, ny=%d\n", src_x,
+// src_y, src_width, src_height, dst_x, dst_y, nx, ny);
+
+    if (notiled)
+    {
+        pixbuf_blend(src->gobj(), dest->gobj(), src_x, src_y,
+            src_width, src_height, dst_x, dst_y, 1.0);
+        return;
+    }
+
+    if (ny)
+    {
+        for (x = 0; x < dest_width; x += x == 0 && nx ? nx : src_width)
+        {
+            pixbuf_blend(src->gobj(), dest->gobj(),
+                x == 0 && nx ? src_x + src_width - nx : src_x,
+                src_y + src_height - ny,
+                x == 0 && nx ? nx : src_width,
+                ny,
+                x, 0, 1.0);
+        }
+    }
+
+    if (nx)
+    {
+        for (y = 0; y < dest_height; y += y == 0 && ny ? ny : src_height)
+        {
+            pixbuf_blend(src->gobj(), dest->gobj(),
+                src_x + src_width - nx,
+                y == 0 && ny ? src_y + src_height - ny : src_y,
+                nx,
+                y == 0 && ny ? ny : src_height,
+                0, y, 1.0);
+        }
+    }
+
+    for (y = ny; y < dest_height; y += src_height)
+    {
+        for (x = nx; x < dest_width; x += src_width)
+        {
+            pixbuf_blend(src->gobj(), dest->gobj(), src_x, src_y,
+                src_width, src_height, x, y, 1.0);
         }
     }
 }
@@ -389,17 +483,13 @@ always_fit:
                     background_preserve_aspect);
             }
 
-            image->source = pbuf;
-            if (background_tile)
-            {
-                Glib::RefPtr<Gdk::Pixbuf> pbuf2 = Gdk::Pixbuf::create(pbuf->get_colorspace(),
-                    pbuf->get_has_alpha(),
-                    pbuf->get_bits_per_sample(),
-                    window_width,
-                    window_height);
-                pixbuf_tile(image->source, pbuf2);
-                image->source = pbuf2;
-            }
+            Glib::RefPtr<Gdk::Pixbuf> pbuf2 = Gdk::Pixbuf::create(pbuf->get_colorspace(),
+                pbuf->get_has_alpha(),
+                pbuf->get_bits_per_sample(),
+                window_width,
+                window_height);
+            pixbuf_tile(pbuf, pbuf2, background_center, !background_tile);
+            image->source = pbuf2;
         }
 
 #endif
@@ -861,6 +951,7 @@ void WayfireBackground::setup_window()
 #else
     background_fill_mode.set_callback(set_background);
     background_tile.set_callback(set_background);
+    background_center.set_callback(set_background);
     background_span.set_callback(set_background);
     background_always_fit.set_callback(set_background);
 #endif
