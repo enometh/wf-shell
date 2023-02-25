@@ -60,6 +60,13 @@ class WayfireBackground
     WfOption<bool> background_randomize{"background/randomize"};
     WfOption<std::string> background_fill_mode{"background/fill_mode"};
 
+#ifdef GNOME_BG
+    WfOption<bool> background_tile{"background/tile"};
+    WfOption<bool> background_center{"background/center"};
+    WfOption<bool> background_span{"background/span"};
+    WfOption<bool> background_always_fit{"background/always_fit"};
+#endif
+
     Glib::RefPtr<Gdk::Pixbuf> create_from_file_safe(std::string path);
     bool background_transition_frame(int timer);
     bool load_images_from_dir(std::string path);
