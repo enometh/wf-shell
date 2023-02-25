@@ -147,9 +147,20 @@ Glib::RefPtr<Gdk::Pixbuf> WayfireBackground::create_from_file_safe(std::string p
     int height = window.get_allocated_height() * scale;
 
     try {
+#ifdef GNOME_BG
+	if (!background_span) {
+	    pbuf =
+		Gdk::Pixbuf::create_from_file(path);
+	} else {
+	    pbuf =
+		Gdk::Pixbuf::create_from_file(path, width, height,
+					      background_preserve_aspect);
+	}
+#else
         pbuf =
             Gdk::Pixbuf::create_from_file(path, width, height,
                 background_preserve_aspect);
+#endif
     } catch (...)
     {
         return Glib::RefPtr<Gdk::Pixbuf>();

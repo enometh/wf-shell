@@ -21,5 +21,17 @@
 		<_short>Preserve Aspect</_short>
 		<default>false</default>
 	</option>
+	<option name="tile" type="bool">
+		<_short>Tile</_short>
+		<default>false</default>
+	</option>
+	<option name="center" type="bool">
+		<_short>Centered</_short>
+		<default>false</default>
+	</option>
+	<option name="span" type="bool">
+		<_short>Span</_short>
+		<default>true</default>
+	</option>
 	</plugin>
 </wf-shell>
