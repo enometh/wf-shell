@@ -122,6 +122,7 @@ pixbuf_tile (Glib::RefPtr<Gdk::Pixbuf> src, Glib::RefPtr<Gdk::Pixbuf> dest, bool
 //	fprintf(stderr, ":src_x=%d src_y=%d src_width=%d src_height=%d dst_X=%d dst_Y=%d, nx=%d, ny=%d\n", src_x, src_y, src_width, src_height, dst_x, dst_y, nx, ny);
 
 	if (notiled) {
+	    dest->fill(0x00000000);
 	    pixbuf_blend (src->gobj(), dest->gobj(), src_x, src_y,
 			  src_width, src_height, dst_x, dst_y, 1.0);
 	    return;
