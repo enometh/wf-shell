@@ -33,5 +33,9 @@
 		<_short>Span</_short>
 		<default>true</default>
 	</option>
+	<option name="always_fit" type="bool">
+		<_short>Always fit</_short>
+		<default>true</default>
+	</option>
 	</plugin>
 </wf-shell>

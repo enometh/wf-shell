@@ -63,6 +63,7 @@ class WayfireBackground
     WfOption<bool> background_tile{"background/tile"};
     WfOption<bool> background_center{"background/center"};
     WfOption<bool> background_span{"background/span"};
+    WfOption<bool> background_always_fit{"background/always_fit"};
 #endif
 
     Glib::RefPtr<Gdk::Pixbuf> create_from_file_safe(std::string path);

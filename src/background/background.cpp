@@ -219,7 +219,13 @@ Glib::RefPtr<Gdk::Pixbuf> WayfireBackground::create_from_file_safe(std::string p
 	if (!background_span) {
 	    pbuf =
 		Gdk::Pixbuf::create_from_file(path);
+	    if (pbuf && background_always_fit &&
+		(pbuf->get_width() > width || pbuf->get_height() > height)) {
+		fprintf(stderr, "ignoring background span for image dim (%d, %d) > (%d, %d) \n", pbuf->get_width(), pbuf->get_height(), width, height);
+		goto always_fit;
+	    }
 	} else {
+always_fit:
 	    pbuf =
 		Gdk::Pixbuf::create_from_file(path, width, height,
 					      background_preserve_aspect);
