@@ -88,7 +88,7 @@ class WayfireBackground
 
     Glib::RefPtr<BackgroundImage> create_from_file_safe(std::string path);
     bool background_transition_frame(int timer);
-    bool load_images_from_dir(std::string path);
+    bool load_images_from_dir(std::string path, int depth = 0);
     Glib::RefPtr<BackgroundImage> load_next_background();
     void reset_background();
     void update_background();
