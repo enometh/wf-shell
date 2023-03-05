@@ -47,7 +47,7 @@ class WayfireBackgroundApp : public WayfireShellApp
         return Gio::Application::Flags::NON_UNIQUE;
     }
 
-    std::vector<std::string> get_background_list(std::string path);
+    std::vector<std::string> get_background_list(std::string path, int depth = 0);
     void change_background();
     static gboolean sigusr1_handler(void *instance);
     void write_cache(std::string path);

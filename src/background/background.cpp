@@ -109,10 +109,18 @@ std::string WayfireBackgroundApp::get_application_name()
     return "org.wayfire.background";
 }
 
-std::vector<std::string> WayfireBackgroundApp::get_background_list(std::string path)
+std::vector<std::string> WayfireBackgroundApp::get_background_list(std::string path, int depth)
 {
+    std::vector<std::string> images;
     wordexp_t exp;
     LOGD("Looking for background images in ", path);
+    bool skip = false;
+
+    if (depth != 0)
+    {
+        skip = true;
+        goto skip_wordexp;
+    }
 
     /* Expand path */
     if (wordexp(path.c_str(), &exp, 0))
@@ -127,7 +135,6 @@ std::vector<std::string> WayfireBackgroundApp::get_background_list(std::string p
         exit(0);
     }
 
-    std::vector<std::string> images;
     struct stat s;
     if (stat(path.c_str(), &s) == 0)
     {
@@ -139,11 +146,18 @@ std::vector<std::string> WayfireBackgroundApp::get_background_list(std::string p
         }
     }
 
-    auto dir = opendir(exp.we_wordv[0]);
+skip_wordexp:
+    auto dir = opendir(depth == 0 ? exp.we_wordv[0] : path.c_str());
     if (!dir)
     {
         perror("Error getting list of images: !dir");
-        exit(0);
+        if (!skip)
+        {
+            wordfree(&exp);
+        }
+
+        // exit(0);
+        return images;
     }
 
     /* Iterate over all files in the directory */
@@ -156,15 +170,14 @@ std::vector<std::string> WayfireBackgroundApp::get_background_list(std::string p
             continue;
         }
 
-        auto fullpath = std::string(exp.we_wordv[0]) + "/" + file->d_name;
-
+        auto fullpath = (depth == 0 ? std::string(exp.we_wordv[0]) : path) + "/" + file->d_name;
         struct stat next;
         if (stat(fullpath.c_str(), &next) == 0)
         {
             if (S_ISDIR(next.st_mode))
             {
                 /* Recursive search */
-                auto list = get_background_list(fullpath);
+                auto list = get_background_list(fullpath, 1 + depth);
                 images.insert(std::end(images), std::begin(list), std::end(list));
             } else
             {
@@ -173,8 +186,12 @@ std::vector<std::string> WayfireBackgroundApp::get_background_list(std::string p
         }
     }
 
-    wordfree(&exp);
     closedir(dir);
+
+    if (depth == 0)
+    {
+        wordfree(&exp);
+    }
 
     bool background_randomize = WfOption<bool>{"background/randomize"};
     if (background_randomize && images.size())
