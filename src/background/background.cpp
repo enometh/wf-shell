@@ -4,6 +4,9 @@
 #include <gtkmm.h>
 #include <gdkmm.h>
 #include <gdk/wayland/gdkwayland.h>
+
+#include <sys/resource.h>
+
 #include <random>
 #include <algorithm>
 #include <iostream>
@@ -49,8 +52,11 @@ WayfireBackground::WayfireBackground(WayfireOutput *output)
 WayfireBackground::~WayfireBackground()
 {}
 
+static int set_prlimits(void);
+
 int main(int argc, char **argv)
 {
+    set_prlimits();
     WayfireBackgroundApp::create(argc, argv);
     return 0;
 }
@@ -391,4 +397,42 @@ void WayfireBackgroundApp::file_monitor(std::string& path)
             it.second->gl_area->show_image(current_background);
         }
     });
+}
+
+static int set_prlimits()
+{
+    rlim_t old_lim = 1024, new_lim = 2048;
+    struct rlimit old_l, new_l, *newp = NULL;
+    pid_t pid = 0;
+
+    if (prlimit(pid, RLIMIT_NOFILE, newp, &old_l) == -1)
+    {
+        perror("prlimit-1");
+        return -1;
+    }
+
+    fprintf(stderr, "Previous limits: soft=%jd; hard=%jd\n",
+        (intmax_t)old_l.rlim_cur, (intmax_t)old_l.rlim_max);
+    if (old_l.rlim_cur <= old_lim)
+    {
+        fprintf(stderr, "attempting to increase RLIMIT_NOFILE from %lu to %lu\n",
+            old_l.rlim_cur, new_lim);
+        new_l.rlim_cur = new_lim;
+        new_l.rlim_max = old_l.rlim_max;
+        if (prlimit(pid, RLIMIT_NOFILE, &new_l, &old_l) == -1)
+        {
+            perror("prlimit-2");
+            return -1;
+        }
+    }
+
+    if (prlimit(pid, RLIMIT_NOFILE, NULL, &old_l) == -1)
+    {
+        perror("prlimit-3");
+        return -1;
+    }
+
+    fprintf(stderr, "New limits: soft=%jd; hard=%jd\n",
+        (intmax_t)old_l.rlim_cur, (intmax_t)old_l.rlim_max);
+    return 1;
 }
