@@ -395,9 +395,16 @@ bool WayfireBackground::change_background()
     return true;
 }
 
-bool WayfireBackground::load_images_from_dir(std::string path)
+bool WayfireBackground::load_images_from_dir(std::string path, int depth)
 {
     wordexp_t exp;
+    bool skip = false;
+
+    if (depth != 0)
+    {
+        skip = true;
+        goto skip_wordexp;
+    }
 
     /* Expand path */
     if (wordexp(path.c_str(), &exp, 0))
@@ -411,10 +418,15 @@ bool WayfireBackground::load_images_from_dir(std::string path)
         return false;
     }
 
-    auto dir = opendir(exp.we_wordv[0]);
+skip_wordexp:
+    auto dir = opendir(depth == 0 ? exp.we_wordv[0] : path.c_str());
     if (!dir)
     {
-        wordfree(&exp);
+        if (!skip)
+        {
+            wordfree(&exp);
+        }
+
         return false;
     }
 
@@ -428,7 +440,7 @@ bool WayfireBackground::load_images_from_dir(std::string path)
             continue;
         }
 
-        auto fullpath = std::string(exp.we_wordv[0]) + "/" + file->d_name;
+        auto fullpath = (depth == 0 ? std::string(exp.we_wordv[0]) : path) + "/" + file->d_name;
 
         struct stat next;
         if (stat(fullpath.c_str(), &next) == 0)
@@ -436,7 +448,7 @@ bool WayfireBackground::load_images_from_dir(std::string path)
             if (S_ISDIR(next.st_mode))
             {
                 /* Recursive search */
-                load_images_from_dir(fullpath);
+                load_images_from_dir(fullpath, 1 + depth);
             } else
             {
                 images.push_back(fullpath);
@@ -444,7 +456,10 @@ bool WayfireBackground::load_images_from_dir(std::string path)
         }
     }
 
-    wordfree(&exp);
+    if (depth == 0)
+    {
+        wordfree(&exp);
+    }
 
     if (background_randomize && images.size())
     {
