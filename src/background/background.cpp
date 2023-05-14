@@ -644,7 +644,7 @@ void WayfireBackground::update_background()
 void WayfireBackground::reset_background()
 {
     images.clear();
-    current_background = 0;
+    current_background = -1;
     change_bg_conn.disconnect();
 }
 
