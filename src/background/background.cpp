@@ -504,7 +504,7 @@ bool WayfireBackground::load_next_background(Glib::RefPtr<Gdk::Pixbuf> & pbuf,
 void WayfireBackground::reset_background()
 {
     images.clear();
-    current_background = 0;
+    current_background = -1;
     change_bg_conn.disconnect();
     scale = window.get_scale_factor();
 }
