@@ -215,7 +215,7 @@ void WayfireBackgroundApp::change_background()
     std::string background_path = WfOption<std::string>{"background/image"};
     auto list = get_background_list(background_path);
     auto idx  = find(list.begin(), list.end(), current_background) - list.begin();
-    idx = (idx + 1) % list.size();
+    idx = idx == list.size() ? 0 : (idx + 1) % list.size();
 
     if (current_background != list[idx])
     {
