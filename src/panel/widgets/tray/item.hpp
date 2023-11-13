@@ -5,8 +5,8 @@
 #include <gtkmm.h>
 
 #include <wf-option-wrap.hpp>
-#include <libdbusmenu-glib/dbusmenu-glib.h>
 #include "dbusmenu.hpp"
+
 #include <sstream>
 #include <string>
 
@@ -19,12 +19,14 @@ class StatusNotifierItem : public Gtk::Button
     WfOption<int> smooth_scolling_threshold{"panel/tray_smooth_scrolling_threshold"};
     WfOption<bool> menu_on_middle_click{"panel/tray_menu_on_middle_click"};
 
+// #if HAVE_DBUS_MENU_GTK
     Glib::ustring dbus_name, menu_path;
 
     Glib::RefPtr<Gio::DBus::Proxy> item_proxy;
 
     Gtk::PopoverMenu popover;
     std::shared_ptr<DbusMenuModel> menu;
+// #endif
 
     bool has_menu = false;
 
@@ -39,11 +41,15 @@ class StatusNotifierItem : public Gtk::Button
     template<typename T>
     T get_item_property(const Glib::ustring & name, const T & default_value = {}) const
     {
+#ifdef HAVE_DBUS_MENU_GTK
         Glib::VariantBase variant;
         item_proxy->get_cached_property(variant, name);
         return variant && variant.is_of_type(Glib::Variant<T>::variant_type()) ?
                Glib::VariantBase::cast_dynamic<Glib::Variant<T>>(variant).get() :
                default_value;
+#else
+        return default_value;
+#endif
     }
 
     void init_widget();
@@ -59,7 +65,9 @@ class StatusNotifierItem : public Gtk::Button
     std::string dbus_name_as_prefix();
 
   public:
+#if HAVE_DBUS_MENU_GTK
     void menu_update(DbusmenuClient *client);
+#endif
     explicit StatusNotifierItem(const Glib::ustring & service);
     ~StatusNotifierItem();
     std::string get_unique_name();
