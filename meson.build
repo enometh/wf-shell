@@ -28,12 +28,16 @@ libpulse = dependency('libpulse', required: get_option('volume-widget'))
 libgvc = subproject('gvc', default_options: ['static=true'], required: get_option('volume-widget'))
 pipewire = dependency('libpipewire-0.3', required: get_option('wp-mixer-widget'))
 wireplumber = dependency('wireplumber-0.5', required: get_option('wp-mixer-widget'))
-dbusmenu_gtk = dependency('dbusmenu-glib-0.4')
+dbusmenu_gtk = dependency('dbusmenu-glib-0.4', required: false)
 xkbregistry = dependency('xkbregistry')
 json = subproject('wf-json').get_variable('wfjson')
 openssl = dependency('openssl')
 gbm = dependency('gbm', required: get_option('live-previews-dmabuf'))
 drm = dependency('libdrm', required: get_option('live-previews-dmabuf'))
+
+if dbusmenu_gtk.found()
+  add_project_arguments('-DHAVE_DBUS_MENU_GTK=1', language : 'cpp')
+endif
 
 if get_option('wayland-logout') == true
 	wayland_logout = subproject('wayland-logout')

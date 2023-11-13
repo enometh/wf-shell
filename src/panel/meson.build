@@ -20,7 +20,7 @@ widget_sources = [
   'widgets/tray/item.cpp',
   'widgets/tray/host.cpp',
   'widgets/tray/dbusmenu.cpp',
-  'widgets/workspace-switcher.cpp',
+  'widgets/workspace-switcher.cpp'
 ]
 
 deps = [
@@ -30,10 +30,13 @@ deps = [
   libutil,
   wf_protos,
   wfconfig,
-  dbusmenu_gtk,
   xkbregistry,
   json,
 ]
+
+if dbusmenu_gtk.found()
+  deps += [dbusmenu_gtk]
+endif
 
 if libpulse.found()
   widget_sources += [
