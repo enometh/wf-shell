@@ -21,8 +21,12 @@ wfconfig = dependency('wf-config', version: '>=0.7.0') #TODO fallback submodule
 epoxy = dependency('epoxy')
 gtklayershell = dependency('gtk4-layer-shell-0', fallback: ['gtk4-layer-shell'])
 libpulse = dependency('libpulse', required: get_option('pulse'))
-dbusmenu_gtk = dependency('dbusmenu-glib-0.4')
+dbusmenu_gtk = dependency('dbusmenu-glib-0.4', required: false)
 libgvc = subproject('gvc', default_options: ['static=true'], required: get_option('pulse'))
+
+if dbusmenu_gtk.found()
+  add_project_arguments('-DHAVE_DBUS_MENU_GTK=1', language : 'cpp')
+endif
 
 if get_option('wayland-logout') == true
 	wayland_logout = subproject('wayland-logout')

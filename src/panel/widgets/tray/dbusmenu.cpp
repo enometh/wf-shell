@@ -3,6 +3,7 @@
 #include <iostream>
 #include <time.h>
 
+#if HAVE_DBUS_MENU_GTK
 static void menu_updated(DbusmenuMenuitem *item, gpointer user_data)
 {
     DbusMenuModel *menu = (DbusMenuModel*)user_data;
@@ -12,6 +13,8 @@ static void menu_updated(DbusmenuMenuitem *item, gpointer user_data)
     }
 }
 
+#endif
+
 DbusMenuModel::DbusMenuModel()
 {
     actions = Gio::SimpleActionGroup::create();
@@ -19,10 +22,12 @@ DbusMenuModel::DbusMenuModel()
 
 DbusMenuModel::~DbusMenuModel()
 {
+#if HAVE_DBUS_MENU_GTK
     if (client)
     {
         g_object_unref(client);
     }
+#endif
 }
 
 type_signal_action_group DbusMenuModel::signal_action_group()
@@ -34,6 +39,7 @@ void DbusMenuModel::connect(const Glib::ustring & dbus_name, const Glib::ustring
     const Glib::ustring & pref)
 {
     prefix = pref;
+#if HAVE_DBUS_MENU_GTK
     client = dbusmenu_client_new(dbus_name.c_str(), menu_path.c_str());
     auto gclient = G_OBJECT(client);
     g_signal_connect(
@@ -43,8 +49,10 @@ void DbusMenuModel::connect(const Glib::ustring & dbus_name, const Glib::ustring
         this);
     auto root = dbusmenu_client_get_root(client);
     reconstitute(root);
+#endif
 }
 
+#if HAVE_DBUS_MENU_GTK
 void DbusMenuModel::reconstitute(DbusmenuMenuitem *rootItem)
 {
     menu = Gio::Menu::create();
@@ -182,6 +190,8 @@ void DbusMenuModel::layout_updated(DbusmenuMenuitem *item)
     auto root = dbusmenu_client_get_root(client);
     reconstitute(root);
 }
+
+#endif
 
 Glib::RefPtr<Gio::SimpleActionGroup> DbusMenuModel::get_action_group()
 {

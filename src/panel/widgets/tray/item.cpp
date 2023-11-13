@@ -212,6 +212,7 @@ void StatusNotifierItem::update_icon()
 
 void StatusNotifierItem::init_menu()
 {
+#if HAVE_DBUS_MENU_GTK
     menu_path = get_item_property<Glib::DBusObjectPathString>("Menu");
 
     if (menu_path.empty())
@@ -229,6 +230,7 @@ void StatusNotifierItem::init_menu()
         popover.set_menu_model(menu->get_menu());
     });
     has_menu = true;
+#endif
 }
 
 void StatusNotifierItem::handle_signal(const Glib::ustring & signal,
