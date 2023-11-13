@@ -5,7 +5,9 @@
 #include <gtkmm/icontheme.h>
 #include <gtkmm/tooltip.h>
 
-#include <libdbusmenu-gtk/dbusmenu-gtk.h>
+#ifdef HAVE_DBUS_MENU_GTK
+    #include <libdbusmenu-gtk/dbusmenu-gtk.h>
+#endif
 
 static std::pair<Glib::ustring, Glib::ustring> name_and_obj_path(const Glib::ustring & service)
 {
@@ -242,6 +244,7 @@ void StatusNotifierItem::init_menu()
         return;
     }
 
+#if HAVE_DBUS_MENU_GTK
     auto *raw_menu = dbusmenu_gtkmenu_new((gchar*)dbus_name.data(), (gchar*)menu_path.data());
     if (raw_menu == nullptr)
     {
@@ -249,6 +252,7 @@ void StatusNotifierItem::init_menu()
     }
 
     menu = std::move(*Glib::wrap(GTK_MENU(raw_menu)));
+#endif
     menu->attach_to_widget(*this);
 }
 
