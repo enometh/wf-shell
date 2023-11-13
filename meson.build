@@ -20,7 +20,13 @@ gtkmm          = dependency('gtkmm-3.0', version: '>=3.24')
 wfconfig       = dependency('wf-config', version: '>=0.7.0') #TODO fallback submodule
 gtklayershell  = dependency('gtk-layer-shell-0', version: '>= 0.6', fallback: ['gtk-layer-shell', 'gtk_layer_shell'])
 libpulse       = dependency('libpulse', required : get_option('pulse'))
-dbusmenu_gtk   = dependency('dbusmenu-gtk3-0.4')
+dbusmenu_gtk   = dependency('dbusmenu-gtk3-0.4', required: false)
+
+if dbusmenu_gtk.found()
+  add_project_arguments('-DHAVE_DBUS_MENU_GTK=1', language : 'cpp')
+endif
+
+
 libgvc         = subproject('gvc', default_options: ['static=true'], required : get_option('pulse'))
 
 if get_option('wayland-logout') == true
