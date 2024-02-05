@@ -730,6 +730,9 @@ void WayfireBackground::setup_window()
     gtk_layer_set_anchor(window.gobj(), GTK_LAYER_SHELL_EDGE_LEFT, true);
     gtk_layer_set_anchor(window.gobj(), GTK_LAYER_SHELL_EDGE_RIGHT, true);
     gtk_layer_set_keyboard_mode(window.gobj(), GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND);
+    cairo_region_t *empty_region = cairo_region_create();
+    gtk_widget_input_shape_combine_region(GTK_WIDGET(window.gobj()), empty_region);
+    cairo_region_destroy(empty_region);
 
     gtk_layer_set_exclusive_zone(window.gobj(), -1);
     window.add(drawing_area);
