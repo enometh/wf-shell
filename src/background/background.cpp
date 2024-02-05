@@ -978,6 +978,14 @@ void WayfireBackground::setup_window()
     background_cycle_timeout.set_callback(reset_cycle);
 
     window->present();
+    GdkDisplay *gdk_display     = gdk_display_get_default();
+    wl_compositor *wlcompositor = gdk_wayland_display_get_wl_compositor(gdk_display);
+    struct wl_region *wlregion  = wl_compositor_create_region(wlcompositor);
+    wl_region_add(wlregion, 0, 0, 0, 0);
+    GdkWaylandSurface *gdk_surface = window->get_surface()->gobj();
+    wl_surface *wlsurface = gdk_wayland_surface_get_wl_surface(gdk_surface);
+    wl_surface_set_input_region(wlsurface, wlregion);
+    wl_region_destroy(wlregion);
 }
 
 WayfireBackground::WayfireBackground(WayfireShellApp *app, WayfireOutput *output)
