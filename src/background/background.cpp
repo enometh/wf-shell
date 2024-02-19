@@ -584,6 +584,8 @@ skip_wordexp:
         }
     }
 
+    closedir(dir);
+
     if (depth == 0)
     {
         wordfree(&exp);
