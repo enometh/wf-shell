@@ -275,6 +275,7 @@ BackgroundDrawingArea::BackgroundDrawingArea()
     fade.animate(0, 0);
 }
 
+#ifndef GNOME_BG
 Glib::RefPtr<Gdk::Pixbuf> WayfireBackground::create_from_file_safe(std::string path)
 {
     Glib::RefPtr<Gdk::Pixbuf> pbuf;
@@ -297,55 +298,19 @@ Glib::RefPtr<Gdk::Pixbuf> WayfireBackground::create_from_file_safe(std::string p
 
         offset_x    = offset_y = 0.0;
         image_scale = 1.0;
-#ifdef GNOME_BG
-        goto gb_branch;
-#else
         return pbuf;
-#endif
     }
 
     try {
-#ifdef GNOME_BG
-        if (!background_span)
-        {
-            pbuf =
-                Gdk::Pixbuf::create_from_file(path);
-            if (pbuf && background_always_fit &&
-                ((pbuf->get_width() > width) || (pbuf->get_height() > height)))
-            {
-                fprintf(stderr, "ignoring background span for image dim (%d, %d) > (%d, %d) \n",
-                    pbuf->get_width(), pbuf->get_height(), width, height);
-                pbuf =
-                    Gdk::Pixbuf::create_from_file(path, width, height,
-                        true);
-
-                goto gb_branch;
-            }
-        } else
-        {
-            pbuf =
-                Gdk::Pixbuf::create_from_file(path, width, height,
-                    true);
-            goto gb_branch;
-        }
-
-#else
         pbuf =
             Gdk::Pixbuf::create_from_file(path, width, height,
                 true);
-
-        return pbuf;
-#endif
     } catch (...)
     {
         return Glib::RefPtr<Gdk::Pixbuf>();
     }
 
-    if (!fill_and_crop_string.compare(background_fill_mode)
-#ifdef GNOME_BG
-        && !background_span
-#endif
-    )
+    if (!fill_and_crop_string.compare(background_fill_mode))
     {
         float screen_aspect_ratio = (float)width / height;
         float image_aspect_ratio  = (float)pbuf->get_width() / pbuf->get_height();
@@ -369,14 +334,40 @@ Glib::RefPtr<Gdk::Pixbuf> WayfireBackground::create_from_file_safe(std::string p
         offset_y    = eq_width ? (height - pbuf->get_height()) * 0.5 : 0;
     }
 
-#ifdef GNOME_BG
-    goto gb_branch;
-#else
     return pbuf;
-#endif
+}
 
-#ifdef GNOME_BG
-gb_branch:
+#else
+Glib::RefPtr<Gdk::Pixbuf> WayfireBackground::create_from_file_safe(std::string path)
+{
+    Glib::RefPtr<Gdk::Pixbuf> pbuf;
+    int width  = window.get_allocated_width() * scale;
+    int height = window.get_allocated_height() * scale;
+
+    try {
+        if (!background_span)
+        {
+            pbuf =
+                Gdk::Pixbuf::create_from_file(path);
+            if (pbuf && background_always_fit &&
+                ((pbuf->get_width() > width) || (pbuf->get_height() > height)))
+            {
+                fprintf(stderr, "ignoring background span for image dim (%d, %d) > (%d, %d) \n",
+                    pbuf->get_width(), pbuf->get_height(), width, height);
+                goto always_fit;
+            }
+        } else
+        {
+always_fit:
+            pbuf =
+                Gdk::Pixbuf::create_from_file(path, width, height,
+                    background_preserve_aspect);
+        }
+    } catch (...)
+    {
+        return Glib::RefPtr<Gdk::Pixbuf>();
+    }
+
     Glib::RefPtr<Gdk::Pixbuf> pbuf2 =
         Gdk::Pixbuf::create(pbuf->get_colorspace(),
             pbuf->get_has_alpha(),
@@ -386,8 +377,9 @@ gb_branch:
     pixbuf_tile(pbuf, pbuf2, background_center, !background_tile);
     offset_x = offset_y = 0.0;
     return pbuf2;
-#endif // GNOME_BG
 }
+
+#endif
 
 bool WayfireBackground::change_background()
 {
@@ -744,13 +736,16 @@ void WayfireBackground::setup_window()
     auto reset_cycle = [=] () { reset_cycle_timeout(); };
     background_image.set_callback(reset_background);
     background_randomize.set_callback(reset_background);
+#ifndef GNOME_BG
     background_fill_mode.set_callback(reset_background);
+#endif
     background_cycle_timeout.set_callback(reset_cycle);
 
 #ifdef GNOME_BG
     background_tile.set_callback(reset_background);
     background_center.set_callback(reset_background);
     background_span.set_callback(reset_background);
+    background_preserve_aspect.set_callback(reset_background);
     background_always_fit.set_callback(reset_background);
 #endif
 
