@@ -27,6 +27,7 @@ DbusMenuModel::~DbusMenuModel()
     {
         g_object_unref(client);
     }
+
 #endif
 }
 
