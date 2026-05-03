@@ -287,7 +287,7 @@ void WayfireShellApp::output_list_updated(const int pos, const int rem, const in
                 "") << std::endl;
         } /* XXX: End workaround. */
 
-        if (monitor->get_connector() == live_preview_output_name)
+        if (std::string(monitor->get_connector()) == std::string(live_preview_output_name))
         {
             live_preview_output = gdk_wayland_monitor_get_wl_output(monitor->gobj());
             monitor->signal_invalidate().connect([=]
