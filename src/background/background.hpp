@@ -33,6 +33,7 @@ class WayfireBackgroundApp : public WayfireShellApp
     Glib::RefPtr<Gio::FileMonitor> fm;
     sigc::connection tag;
     void file_monitor(std::string& path);
+    void init();
 
   public:
     using WayfireShellApp::WayfireShellApp;
@@ -49,8 +50,17 @@ class WayfireBackgroundApp : public WayfireShellApp
 
     std::vector<std::string> get_background_list(std::string path, int depth = 0);
     void change_background();
+    void reshow();
     static gboolean sigusr1_handler(void *instance);
     void write_cache(std::string path);
     void reset_cycle_timeout();
     void prep_cache();
+
+    std::shared_ptr<WfOption<std::string>> background_image /*{"background/image"}*/;
+#ifdef GNOME_BG
+    std::shared_ptr<WfOption<bool>> background_tile /*{"background/tile"}*/;
+    std::shared_ptr<WfOption<bool>> background_center /*{"background/center"}*/;
+    std::shared_ptr<WfOption<bool>> background_span /*{"background/span"}*/;
+    std::shared_ptr<WfOption<bool>> background_always_fit /*{"background/always_fit"}*/;
+#endif
 };

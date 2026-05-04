@@ -18,6 +18,7 @@
 #include <gtk4-layer-shell.h>
 #include <glib-unix.h>
 
+#define GNOME_BG
 #include "background.hpp"
 #include "background-gl.hpp"
 
@@ -70,6 +71,44 @@ int main(int argc, char **argv)
     return 0;
 }
 
+void WayfireBackgroundApp::init()
+{
+    background_image =
+        std::make_shared<WfOption<std::string>>("background/image");
+#ifdef GNOME_BG
+    background_tile =
+        std::make_shared<WfOption<bool>>("background/tile");
+    background_center =
+        std::make_shared<WfOption<bool>>("background/center");
+    background_span =
+        std::make_shared<WfOption<bool>>("background/span");
+    background_always_fit =
+        std::make_shared<WfOption<bool>>("background/always_fit");
+#endif
+
+    auto reload = [=] ()
+    {
+        std::cout << "reload callback " << std::endl;
+        LOGI("RELOAD CALLBACK");
+        this->current_background = "";
+        this->change_background();
+    };
+    background_image->set_callback(reload);
+
+#ifdef GNOME_BG
+    auto reshow = [=] ()
+    {
+        std::cout << "reshow callback " << std::endl;
+        LOGI("RESHOW CALLBACK");
+        this->reshow();
+    };
+    background_tile->set_callback(reshow);
+    background_center->set_callback(reshow);
+    background_span->set_callback(reshow);
+    background_always_fit->set_callback(reshow);
+#endif
+}
+
 void WayfireBackgroundApp::create(int argc, char **argv)
 {
     if (instance)
@@ -87,6 +126,8 @@ void WayfireBackgroundApp::on_activate()
 {
     WayfireShellApp::on_activate();
     prep_cache();
+
+    init();
     // Initial setup of timer etc.
     change_background();
 }
@@ -219,6 +260,14 @@ skip_wordexp:
     return images;
 }
 
+void WayfireBackgroundApp::reshow()
+{
+    for (auto & it : backgrounds)
+    {
+        it.second->gl_area->show_image(current_background);
+    }
+}
+
 void WayfireBackgroundApp::change_background()
 {
     std::string background_path = WfOption<std::string>{"background/image"};
@@ -228,13 +277,9 @@ void WayfireBackgroundApp::change_background()
 
     if (current_background != list[idx])
     {
-        for (auto & it : backgrounds)
-        {
-            it.second->gl_area->show_image(list[idx]);
-        }
-
         current_background = list[idx];
         file_monitor(current_background);
+        reshow();
         write_cache(list[idx]);
     }
 
@@ -401,10 +446,7 @@ void WayfireBackgroundApp::file_monitor(std::string& path)
             return;
         }
 
-        for (auto & it : backgrounds)
-        {
-            it.second->gl_area->show_image(current_background);
-        }
+        reshow();
     });
 }
 
